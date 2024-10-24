@@ -8,7 +8,7 @@ export const typeORMConfig: TypeOrmModuleOptions = {
   port: dbConfig.port,
   username: dbConfig.username,
   password: `${dbConfig.password}`,
-  database: 'isitjustme',
+  database: dbConfig.name,
   entities: [__dirname + '/../**/*.entity.{js,ts}'],
   synchronize: true,
 };
