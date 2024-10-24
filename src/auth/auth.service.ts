@@ -4,15 +4,24 @@ import {
   UnauthorizedException,
   BadRequestException,
   NotFoundException,
+  InternalServerErrorException,
+  ConflictException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 
 import { EmailService } from 'src/email/email.service';
 
+import CreateUserDto from './dto/create-user.dto';
+import { User } from './user.entity';
+
 @Injectable()
 export class AuthService {
   constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private readonly emailService: EmailService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
@@ -41,6 +50,49 @@ export class AuthService {
     }
 
     await this.cacheManager.del(email);
+  }
+
+  async signUp(createUserDto: CreateUserDto) {
+    const {
+      email,
+      nickName: nickname,
+      password,
+      passwordConfirm,
+    } = createUserDto;
+
+    const hasEmail = await this.userRepository.findOne({
+      where: {
+        email,
+      },
+    });
+    if (hasEmail) {
+      throw new ConflictException('이미 사용 중인 이메일입니다.');
+    }
+
+    const hasNickName = await this.userRepository.findOne({
+      where: {
+        nickname,
+      },
+    });
+    if (hasNickName) {
+      throw new ConflictException('이미 사용 중인 닉네임입니다.');
+    }
+
+    if (password !== passwordConfirm) {
+      throw new BadRequestException('비밀번호가 맞지 않습니다.');
+    }
+
+    const newUser = this.userRepository.create({
+      email,
+      nickname,
+      password,
+    });
+
+    try {
+      await this.userRepository.save(newUser);
+    } catch (e) {
+      throw new InternalServerErrorException();
+    }
   }
 
   private generateRandomNumber(): number {

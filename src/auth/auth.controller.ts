@@ -9,7 +9,8 @@ import {
 
 import { AuthService } from './auth.service';
 
-import { VerifyEmailDto } from './dto/verify-email.dto';
+import CreateUserDto from './dto/create-user.dto';
+import VerifyEmailDto from './dto/verify-email.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -31,5 +32,10 @@ export class AuthController {
     const { email } = verifyEmailDto;
     const { token } = query;
     return this.authService.verifyEmail(email, token);
+  }
+
+  @Post('/signup')
+  signUp(@Body(ValidationPipe) createUserDto: CreateUserDto) {
+    return this.authService.signUp(createUserDto);
   }
 }
